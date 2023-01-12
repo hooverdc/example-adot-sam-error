@@ -1,0 +1,18 @@
+# Honeycomb Collector configuration
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+exporters:
+  otlp:
+    endpoint: api.honeycomb.io:443
+    headers:
+      "x-honeycomb-team": ${HONEYCOMB_KEY}
+service:
+  extensions: []
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: []
+      exporters: [otlp]

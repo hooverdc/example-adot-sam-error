@@ -1,0 +1,43 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Example ADOT SAM Error
+
+Parameters:
+  HoneycombKey:
+    Type: String
+
+Globals:
+  Function:
+    Timeout: 60
+
+Resources:
+  LambdaFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: src/
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Layers:
+        # This is the OpenTelemetry Layer for Python. This is used to send traces to honeycomb
+        # See https://aws-otel.github.io/docs/getting-started/lambda/lambda-python for details
+        - !Sub arn:${AWS::Partition}:lambda:${AWS::Region}:901920570463:layer:aws-otel-python-amd64-ver-1-15-0:1
+      Environment:
+        Variables:
+          OPENTELEMETRY_COLLECTOR_CONFIG_FILE: /var/task/collector.yaml
+          OTEL_SERVICE_NAME: ExampleAdotSamError
+          AWS_LAMBDA_EXEC_WRAPPER: /opt/otel-instrument
+          HONEYCOMB_KEY: !Ref HoneycombKey
+
+  LambdaFunctionLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${LambdaFunction}
+      RetentionInDays: 30
+
+Outputs:
+  FunctionARN:
+    Description: "Lambda Function ARN"
+    Value: !GetAtt LambdaFunction.Arn
+  FunctionRoleARN:
+    Description: "Implicit IAM Role created for Lambda Function"
+    Value: !GetAtt LambdaFunction.Arn
